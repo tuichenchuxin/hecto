@@ -1,15 +1,6 @@
-use std::io;
-use std::io::Read;
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
+#![warn(clippy::all, clippy::pedantic)]
+mod editor;
 
 fn main() {
-    enable_raw_mode().unwrap();
-    for b in io::stdin().bytes() {
-        let c = b.unwrap() as char;
-        println!("{}", c);
-        if c == 'q' {
-            disable_raw_mode().unwrap();
-            break;
-        }
-    }
+    editor::Editor::default().run();
 }
