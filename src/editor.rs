@@ -6,7 +6,10 @@ use crossterm::event::{
 };
 use std::io::Error;
 mod terminal;
+mod view;
+
 use terminal::{Position, Size, Terminal};
+use crate::editor::view::View;
 
 const NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -109,7 +112,7 @@ impl Editor {
             Terminal::clear_screen()?;
             Terminal::print("Goodbye.\r\n")?;
         } else {
-            Self::draw_rows()?;
+            View::render()?;
             Terminal::move_caret_to(Position {
                 col: self.location.x,
                 row: self.location.y,
