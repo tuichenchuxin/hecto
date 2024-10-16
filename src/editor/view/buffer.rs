@@ -1,6 +1,7 @@
-use std::io::Error;
 use std::fs::read_to_string;
-use crate::editor::view::line::Line;
+use std::io::Error;
+
+use super::line::Line;
 
 #[derive(Default)]
 pub struct Buffer {
@@ -9,15 +10,17 @@ pub struct Buffer {
 
 impl Buffer {
     pub fn load(file_name: &str) -> Result<Self, Error> {
-        let content = read_to_string(file_name)?;
+        let contents = read_to_string(file_name)?;
         let mut lines = Vec::new();
-        for value in content.lines() {
+        for value in contents.lines() {
             lines.push(Line::from(value));
         }
-        Ok(Self {lines})
+        Ok(Self { lines })
     }
-
     pub fn is_empty(&self) -> bool {
         self.lines.is_empty()
+    }
+    pub fn height(&self) -> usize {
+        self.lines.len()
     }
 }
