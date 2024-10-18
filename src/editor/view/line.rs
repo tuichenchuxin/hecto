@@ -48,7 +48,7 @@ impl Line {
                             };
                             (None, rendered_width)
                         },
-                        |replcement| (Some(replcement), GraphemeWidth::Half),
+                        |replacement| (Some(replacement), GraphemeWidth::Half),
                     );
 
                 TextFragment {
@@ -128,6 +128,16 @@ impl Line {
         }
         if grapheme_index >= self.fragments.len() {
             result.push(character);
+        }
+        self.fragments = Self::str_to_fragments(&result);
+    }
+    pub fn delete(&mut self, grapheme_index: usize) {
+        let mut result = String::new();
+
+        for (index, fragment) in self.fragments.iter().enumerate() {
+            if index != grapheme_index {
+                result.push_str(&fragment.grapheme);
+            }
         }
         self.fragments = Self::str_to_fragments(&result);
     }
