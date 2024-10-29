@@ -2,10 +2,8 @@ use std::{
     io::Error,
     time::{Duration, Instant},
 };
-use super::{
-    terminal::{Size, Terminal},
-    uicomponent::UIComponent,
-};
+
+use super::{Size, Terminal, UIComponent};
 
 const DEFAULT_DURATION: Duration = Duration::new(5, 0);
 
@@ -32,7 +30,7 @@ impl Message {
 pub struct MessageBar {
     current_message: Message,
     needs_redraw: bool,
-    cleared_after_expiry: bool,
+    cleared_after_expiry: bool, //ensures we can properly hide expired messages
 }
 
 impl MessageBar {
@@ -50,16 +48,13 @@ impl UIComponent for MessageBar {
     fn set_needs_redraw(&mut self, value: bool) {
         self.needs_redraw = value;
     }
-
     fn needs_redraw(&self) -> bool {
         (!self.cleared_after_expiry && self.current_message.is_expired()) || self.needs_redraw
     }
-
     fn set_size(&mut self, _: Size) {}
-
     fn draw(&mut self, origin: usize) -> Result<(), Error> {
         if self.current_message.is_expired() {
-            self.cleared_after_expiry = true;
+            self.cleared_after_expiry = true; // Upon expiration, we need to write out "" once to clear the message. To avoid clearing more than necessary, we  keep track of the fact that we've already cleared the expired message once.
         }
         let message = if self.current_message.is_expired() {
             ""

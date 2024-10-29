@@ -1,18 +1,14 @@
-use std::cmp::min;
-
-use self::line::Line;
+use std::{cmp::min, io::Error};
 
 use super::{
     command::{Edit, Move},
-    terminal::{Position, Size, Terminal},
-    uicomponent::UIComponent,
-    NAME, VERSION,
+    DocumentStatus, Line, Position, Size, Terminal, UIComponent, NAME, VERSION,
 };
 mod buffer;
 use buffer::Buffer;
-use crate::editor::documentstatus::DocumentStatus;
-use std::io::Error;
-mod line;
+mod fileinfo;
+use fileinfo::FileInfo;
+
 #[derive(Copy, Clone, Default)]
 pub struct Location {
     pub grapheme_index: usize,
@@ -22,14 +18,12 @@ pub struct Location {
 pub struct View {
     buffer: Buffer,
     needs_redraw: bool,
-    // The view always starts at `(0/0)`. The `size` property determines the visible area.
     size: Size,
     text_location: Location,
     scroll_offset: Position,
 }
 
 impl View {
-
     pub fn get_status(&self) -> DocumentStatus {
         DocumentStatus {
             total_lines: self.buffer.height(),
@@ -37,6 +31,10 @@ impl View {
             file_name: format!("{}", self.buffer.file_info),
             is_modified: self.buffer.dirty,
         }
+    }
+
+    pub const fn is_file_loaded(&self) -> bool {
+        self.buffer.is_file_loaded()
     }
 
     // region: file i/o
@@ -50,6 +48,10 @@ impl View {
     pub fn save(&mut self) -> Result<(), Error> {
         self.buffer.save()
     }
+    pub fn save_as(&mut self, file_name: &str) -> Result<(), Error> {
+        self.buffer.save_as(file_name)
+    }
+
     // endregion
 
     // region: command handling
@@ -78,6 +80,7 @@ impl View {
         self.scroll_text_location_into_view();
     }
 
+    // endregion
     // region: Text editing
     fn insert_newline(&mut self) {
         self.buffer.insert_newline(self.text_location);
@@ -113,8 +116,9 @@ impl View {
         }
         self.set_needs_redraw(true);
     }
-    // region: Rendering
+    // endregion
 
+    // region: Rendering
 
     fn render_line(at: usize, line_text: &str) -> Result<(), Error> {
         Terminal::print_row(at, line_text)
@@ -224,7 +228,7 @@ impl View {
     fn move_left(&mut self) {
         if self.text_location.grapheme_index > 0 {
             self.text_location.grapheme_index -= 1;
-        } else if self.text_location.line_index > 0{
+        } else if self.text_location.line_index > 0 {
             self.move_up(1);
             self.move_to_end_of_line();
         }
@@ -262,32 +266,31 @@ impl View {
 
 impl UIComponent for View {
     fn set_needs_redraw(&mut self, value: bool) {
-        self.needs_redraw = value
+        self.needs_redraw = value;
     }
 
     fn needs_redraw(&self) -> bool {
         self.needs_redraw
     }
-
     fn set_size(&mut self, size: Size) {
         self.size = size;
         self.scroll_text_location_into_view();
     }
 
-    fn draw(&mut self, origin_y: usize) -> Result<(), Error> {
+    fn draw(&mut self, origin_row: usize) -> Result<(), Error> {
         let Size { height, width } = self.size;
-        let end_y = origin_y.saturating_add(height);
+        let end_y = origin_row.saturating_add(height);
         // we allow this since we don't care if our welcome message is put _exactly_ in the top third.
         // it's allowed to be a bit too far up or down
         #[allow(clippy::integer_division)]
         let top_third = height / 3;
         let scroll_top = self.scroll_offset.row;
-        for current_row in origin_y..end_y {
+        for current_row in origin_row..end_y {
             // to get the correct line index, we have to take current_row (the absolute row on screen),
-            // subtract origin_y to get the current row relative to the view (ranging from 0 to self.size.height)
+            // subtract origin_row to get the current row relative to the view (ranging from 0 to self.size.height)
             // and add the scroll offset.
             let line_idx = current_row
-                .saturating_sub(origin_y)
+                .saturating_sub(origin_row)
                 .saturating_add(scroll_top);
             if let Some(line) = self.buffer.lines.get(line_idx) {
                 let left = self.scroll_offset.col;

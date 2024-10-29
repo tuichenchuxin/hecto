@@ -1,7 +1,15 @@
-use crossterm::event::{Event, KeyEvent, KeyModifiers};
+use crossterm::event::{
+    Event,
+    KeyCode::{
+        self, Backspace, Char, Delete, Down, End, Enter, Home, Left, PageDown, PageUp, Right, Tab,
+        Up,
+    },
+    KeyEvent, KeyModifiers,
+};
 use std::convert::TryFrom;
-use crossterm::event::KeyCode::{Char, Home, Up, Down, Left, Right, PageUp, PageDown, End, Backspace, Delete, Enter, Tab};
-use super::terminal::Size;
+
+use super::Size;
+
 #[derive(Clone, Copy)]
 pub enum Move {
     PageUp,
@@ -13,17 +21,13 @@ pub enum Move {
     Right,
     Down,
 }
-
 impl TryFrom<KeyEvent> for Move {
     type Error = String;
-
     fn try_from(event: KeyEvent) -> Result<Self, Self::Error> {
-        let KeyEvent{
-            code,
-            modifiers,
-            ..
+        let KeyEvent {
+            code, modifiers, ..
         } = event;
-        
+
         if modifiers == KeyModifiers::NONE {
             match code {
                 Up => Ok(Self::Up),
@@ -75,21 +79,24 @@ pub enum System {
     Save,
     Resize(Size),
     Quit,
+    Dismiss,
 }
 
 impl TryFrom<KeyEvent> for System {
     type Error = String;
-
     fn try_from(event: KeyEvent) -> Result<Self, Self::Error> {
         let KeyEvent {
             code, modifiers, ..
         } = event;
+
         if modifiers == KeyModifiers::CONTROL {
             match code {
                 Char('q') => Ok(Self::Quit),
                 Char('s') => Ok(Self::Save),
                 _ => Err(format!("Unsupported CONTROL+{code:?} combination")),
             }
+        } else if modifiers == KeyModifiers::NONE && matches!(code, KeyCode::Esc) {
+            Ok(Self::Dismiss)
         } else {
             Err(format!(
                 "Unsupported key code {code:?} or modifier {modifiers:?}"
@@ -97,6 +104,7 @@ impl TryFrom<KeyEvent> for System {
         }
     }
 }
+
 #[derive(Clone, Copy)]
 pub enum Command {
     Move(Move),
@@ -108,7 +116,6 @@ pub enum Command {
 #[allow(clippy::as_conversions)]
 impl TryFrom<Event> for Command {
     type Error = String;
-
     fn try_from(event: Event) -> Result<Self, Self::Error> {
         match event {
             Event::Key(key_event) => Edit::try_from(key_event)

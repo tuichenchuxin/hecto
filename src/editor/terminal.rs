@@ -1,28 +1,13 @@
 use crossterm::cursor::{Hide, MoveTo, Show};
 use crossterm::style::{Attribute, Print};
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode, size, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen, DisableLineWrap, EnableLineWrap, SetTitle};
+use crossterm::terminal::{
+    disable_raw_mode, enable_raw_mode, size, Clear, ClearType, DisableLineWrap, EnableLineWrap,
+    EnterAlternateScreen, LeaveAlternateScreen, SetTitle,
+};
 use crossterm::{queue, Command};
 use std::io::{stdout, Error, Write};
 
-#[derive(Default, Copy, Clone, Eq, PartialEq)]
-pub struct Size {
-    pub height: usize,
-    pub width: usize,
-}
-#[derive(Copy, Clone, Default)]
-pub struct Position {
-    pub col: usize,
-    pub row: usize,
-}
-
-impl Position {
-    pub const fn saturating_sub(self, other: Self) -> Self {
-        Self {
-            row: self.row.saturating_sub(other.row),
-            col: self.col.saturating_sub(other.col),
-        }
-    }
-}
+use super::{Position, Size};
 
 /// Represents the Terminal.
 /// Edge Case for platforms where `usize` < `u16`:
@@ -82,7 +67,6 @@ impl Terminal {
         Self::queue_command(Show)?;
         Ok(())
     }
-
     pub fn disable_line_wrap() -> Result<(), Error> {
         Self::queue_command(DisableLineWrap)?;
         Ok(())

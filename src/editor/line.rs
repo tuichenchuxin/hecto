@@ -1,5 +1,4 @@
 use std::{fmt, ops::Range};
-use std::fmt::Formatter;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -36,7 +35,7 @@ impl Line {
     }
 
     fn str_to_fragments(line_str: &str) -> Vec<TextFragment> {
-         line_str
+        line_str
             .graphemes(true)
             .map(|grapheme| {
                 let (replacement, rendered_width) = Self::replacement_character(grapheme)
@@ -69,7 +68,7 @@ impl Line {
             _ if width > 0 && for_str.trim().is_empty() => Some('␣'),
             _ if width == 0 => {
                 let mut chars = for_str.chars();
-                if let Some(ch) = chars.next() { 
+                if let Some(ch) = chars.next() {
                     if ch.is_control() && chars.next().is_none() {
                         return Some('▯');
                     }
@@ -119,8 +118,13 @@ impl Line {
             })
             .sum()
     }
+    pub fn width(&self) -> usize {
+        self.width_until(self.grapheme_count())
+    }
+
     pub fn insert_char(&mut self, character: char, at: usize) {
         let mut result = String::new();
+
         for (index, fragment) in self.fragments.iter().enumerate() {
             if index == at {
                 result.push(character);
@@ -132,15 +136,22 @@ impl Line {
         }
         self.fragments = Self::str_to_fragments(&result);
     }
-    pub fn delete(&mut self, grapheme_index: usize) {
+    pub fn append_char(&mut self, character: char) {
+        self.insert_char(character, self.grapheme_count());
+    }
+    pub fn delete(&mut self, at: usize) {
         let mut result = String::new();
 
         for (index, fragment) in self.fragments.iter().enumerate() {
-            if index != grapheme_index {
+            if index != at {
                 result.push_str(&fragment.grapheme);
             }
         }
         self.fragments = Self::str_to_fragments(&result);
+    }
+
+    pub fn delete_last(&mut self) {
+        self.delete(self.grapheme_count().saturating_sub(1));
     }
 
     pub fn append(&mut self, other: &Self) {
@@ -148,17 +159,20 @@ impl Line {
         concat.push_str(&other.to_string());
         self.fragments = Self::str_to_fragments(&concat);
     }
+
     pub fn split(&mut self, at: usize) -> Self {
         if at > self.fragments.len() {
             return Self::default();
         }
-        let reminder = self.fragments.split_off(at);
-        Self { fragments: reminder }
+        let remainder = self.fragments.split_off(at);
+        Self {
+            fragments: remainder,
+        }
     }
 }
 
 impl fmt::Display for Line {
-    fn fmt(&self, formatter: &mut Formatter) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         let result: String = self
             .fragments
             .iter()
