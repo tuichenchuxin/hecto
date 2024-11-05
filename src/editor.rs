@@ -20,7 +20,7 @@ use commandbar::CommandBar;
 use documentstatus::DocumentStatus;
 use line::Line;
 use messagebar::MessageBar;
-use position::Position;
+use position::{Col, Position, Row};
 use size::Size;
 use statusbar::StatusBar;
 use terminal::Terminal;
@@ -30,6 +30,7 @@ use view::View;
 use self::command::{
     Command::{self, Edit, Move, System},
     Edit::InsertNewline,
+    Move::{Down, Right},
     System::{Dismiss, Quit, Resize, Save, Search},
 };
 pub const NAME: &str = env!("CARGO_PKG_NAME");
@@ -44,11 +45,11 @@ enum PromptType {
     #[default]
     None,
 }
+
 impl PromptType {
     fn is_none(&self) -> bool {
         *self == Self::None
     }
-    
 }
 
 #[derive(Default)]
@@ -89,6 +90,7 @@ impl Editor {
         editor.refresh_status();
         Ok(editor)
     }
+
     // endregion
 
     // region: Event Loop
@@ -186,10 +188,10 @@ impl Editor {
             self.handle_quit_command();
             return;
         }
-        self.reset_quit_times();
+        self.reset_quit_times(); // Reset quit times for all other commands
 
         match command {
-            System(Quit | Resize(_) | Dismiss) => {}
+            System(Quit | Resize(_) | Dismiss) => {} // Quit and Resize already handled above, others not applicable
             System(Search) => self.set_prompt(PromptType::Search),
             System(Save) => self.handle_save_command(),
             Edit(edit_command) => self.view.handle_edit_command(edit_command),
@@ -217,6 +219,7 @@ impl Editor {
     // endregion
 
     // region quit command handling
+
     // clippy::arithmetic_side_effects: quit_times is guaranteed to be between 0 and QUIT_TIMES
     #[allow(clippy::arithmetic_side_effects)]
     fn handle_quit_command(&mut self) {
@@ -237,7 +240,6 @@ impl Editor {
             self.update_message("");
         }
     }
-
     // end region
 
     // region save command & prompt handling
@@ -282,7 +284,6 @@ impl Editor {
     // region search command & prompt handling
     fn process_command_during_search(&mut self, command: Command) {
         match command {
-            System(Quit | Resize(_) | Search | Save) | Move(_) => {} // Not applicable during save, Resize already handled at this stage
             System(Dismiss) => {
                 self.set_prompt(PromptType::None);
                 self.view.dismiss_search();
@@ -295,34 +296,39 @@ impl Editor {
                 self.command_bar.handle_edit_command(edit_command);
                 let query = self.command_bar.value();
                 self.view.search(&query);
-            },
+            }
+            Move(Right | Down) => self.view.search_next(),
+            System(Quit | Resize(_) | Search | Save) | Move(_) => {} // Not applicable during save, Resize already handled at this stage
         }
     }
     // endregion
+
     // region message & command bar
     fn update_message(&mut self, new_message: &str) {
         self.message_bar.update_message(new_message);
     }
     // endregion
+
     //region prompt handling
     fn in_prompt(&self) -> bool {
         !self.prompt_type.is_none()
     }
+
     fn set_prompt(&mut self, prompt_type: PromptType) {
         match prompt_type {
             PromptType::None => self.message_bar.set_needs_redraw(true), //Ensures the message bar is properly painted during the next redraw cycle
             PromptType::Save => self.command_bar.set_prompt("Save as: "),
             PromptType::Search => {
                 self.view.enter_search();
-                self.command_bar.set_prompt("Search (Esc to cancel): ")
-            },
+                self.command_bar
+                    .set_prompt("Search (Esc to cancel, Arrows to navigate): ");
+            }
         }
         self.command_bar.clear_value();
         self.prompt_type = prompt_type;
     }
     // end region
 }
-
 
 impl Drop for Editor {
     fn drop(&mut self) {

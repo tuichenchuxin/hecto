@@ -80,7 +80,7 @@ pub enum System {
     Resize(Size),
     Quit,
     Dismiss,
-    Search,
+    Search
 }
 
 impl TryFrom<KeyEvent> for System {
