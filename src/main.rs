@@ -7,6 +7,8 @@
     clippy::integer_division
 )]
 mod editor;
+mod prelude;
+
 use editor::Editor;
 
 fn main() {
