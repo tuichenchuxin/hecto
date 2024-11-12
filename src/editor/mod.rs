@@ -13,12 +13,14 @@ mod terminal;
 mod uicomponents;
 mod annotation;
 pub mod annotationtype;
+mod filetype;
 
 use annotatedstring::{AnnotatedString, AnnotationType};
 use documentstatus::DocumentStatus;
 use line::Line;
 use terminal::Terminal;
 use uicomponents::{CommandBar, MessageBar, StatusBar, UIComponent, View};
+use filetype::FileType;
 
 use self::command::{
     Command::{self, Edit, Move, System},
