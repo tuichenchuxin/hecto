@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crossterm::event::{read, Event, KeyEvent, KeyEventKind};
+use crossterm::event::{Event, KeyEvent, KeyEventKind, read};
 use std::{
     env,
     io::Error,
@@ -11,6 +11,8 @@ mod documentstatus;
 mod line;
 mod terminal;
 mod uicomponents;
+mod annotation;
+pub mod annotationtype;
 
 use annotatedstring::{AnnotatedString, AnnotationType};
 use documentstatus::DocumentStatus;
