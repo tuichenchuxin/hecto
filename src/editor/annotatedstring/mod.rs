@@ -2,8 +2,7 @@ use std::{
     cmp::{max, min},
     fmt::{self, Display},
 };
-pub use crate::editor::annotationtype::AnnotationType;
-use crate::editor::annotation::Annotation;
+use super::{Annotation, AnnotationType};
 mod annotatedstringpart;
 use annotatedstringpart::AnnotatedStringPart;
 mod annotatedstringiterator;

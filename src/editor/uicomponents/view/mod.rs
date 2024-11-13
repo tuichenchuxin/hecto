@@ -12,14 +12,12 @@ mod buffer;
 use buffer::Buffer;
 mod searchdirection;
 use searchdirection::SearchDirection;
-
+mod highlighter;
+use highlighter::Highlighter;
 mod fileinfo;
 use fileinfo::FileInfo;
 mod searchinfo;
-mod highlighter;
-
 use searchinfo::SearchInfo;
-use crate::editor::uicomponents::view::highlighter::Highlighter;
 
 #[derive(Default)]
 pub struct View {
@@ -37,7 +35,7 @@ impl View {
         DocumentStatus {
             total_lines: self.buffer.height(),
             current_line_idx: self.text_location.line_idx,
-            file_name: format!("{}", file_info),
+            file_name: format!("{file_info}"),
             is_modified: self.buffer.is_dirty(),
             file_type: file_info.get_file_type(),
         }
@@ -131,10 +129,14 @@ impl View {
     }
 
     pub fn save(&mut self) -> Result<(), Error> {
-        self.buffer.save()
+        self.buffer.save()?;
+        self.set_needs_redraw(true);
+        Ok(())
     }
     pub fn save_as(&mut self, file_name: &str) -> Result<(), Error> {
-        self.buffer.save_as(file_name)
+        self.buffer.save_as(file_name)?;
+        self.set_needs_redraw(true);
+        Ok(())
     }
 
     // endregion
@@ -357,16 +359,21 @@ impl UIComponent for View {
         let end_y = origin_row.saturating_add(height);
         let top_third = height.div_ceil(3);
         let scroll_top = self.scroll_offset.row;
+
         let query = self
             .search_info
             .as_ref()
             .and_then(|search_info| search_info.query.as_deref());
         let selected_match = query.is_some().then_some(self.text_location);
-        let mut highlighter = Highlighter::new(query, selected_match);
-        for current_row in 0..end_y {
+        let mut highlighter = Highlighter::new(
+            query,
+            selected_match,
+            self.buffer.get_file_info().get_file_type(),
+        );
+
+        for current_row in 0..end_y.saturating_add(scroll_top) {
             self.buffer.highlight(current_row, &mut highlighter); //highlight from the start of the document to the end of the visible area, to ensure all annotations are up to date.
         }
-
         for current_row in origin_row..end_y {
             // to get the correct line index, we have to take current_row (the absolute row on screen),
             // subtract origin_row to get the current row relative to the view (ranging from 0 to self.size.height)

@@ -1,12 +1,12 @@
 use super::super::super::AnnotatedString;
 use super::FileInfo;
+use super::Highlighter;
 use super::Line;
 use crate::prelude::*;
 use std::fs::{read_to_string, File};
 use std::io::Error;
 use std::io::Write;
 use std::ops::Range;
-use crate::editor::uicomponents::view::highlighter::Highlighter;
 
 #[derive(Default)]
 pub struct Buffer {
@@ -22,6 +22,7 @@ impl Buffer {
     pub const fn get_file_info(&self) -> &FileInfo {
         &self.file_info
     }
+
     pub fn grapheme_count(&self, idx: LineIdx) -> GraphemeIdx {
         self.lines.get(idx).map_or(0, Line::grapheme_count)
     }
@@ -30,6 +31,7 @@ impl Buffer {
             .get(idx)
             .map_or(0, |line| line.width_until(until))
     }
+
     pub fn get_highlighted_substring(
         &self,
         line_idx: LineIdx,
@@ -37,9 +39,10 @@ impl Buffer {
         highlighter: &Highlighter,
     ) -> Option<AnnotatedString> {
         self.lines.get(line_idx).map(|line| {
-            line.get_annotated_visible_substr(range, highlighter.get_annotations(line_idx))
+            line.get_annotated_visible_substr(range, Some(&highlighter.get_annotations(line_idx)))
         })
     }
+
     pub fn highlight(&self, idx: LineIdx, highlighter: &mut Highlighter) {
         if let Some(line) = self.lines.get(idx) {
             highlighter.highlight(idx, line);
@@ -58,6 +61,7 @@ impl Buffer {
             dirty: false,
         })
     }
+
     pub fn search_forward(&self, query: &str, from: Location) -> Option<Location> {
         if query.is_empty() {
             return None;
@@ -69,7 +73,9 @@ impl Buffer {
             .enumerate()
             .cycle()
             .skip(from.line_idx)
-            .take(self.lines.len().saturating_add(1)) {
+            .take(self.lines.len().saturating_add(1))
+        //taking one more, to search the current line twice (once from the middle, once from the start)
+        {
             let from_grapheme_idx = if is_first {
                 is_first = false;
                 from.grapheme_idx
@@ -78,14 +84,13 @@ impl Buffer {
             };
             if let Some(grapheme_idx) = line.search_forward(query, from_grapheme_idx) {
                 return Some(Location {
-                    line_idx,
                     grapheme_idx,
+                    line_idx,
                 });
             }
         }
         None
     }
-
     pub fn search_backward(&self, query: &str, from: Location) -> Option<Location> {
         if query.is_empty() {
             return None;
@@ -97,7 +102,12 @@ impl Buffer {
             .enumerate()
             .rev()
             .cycle()
-            .skip(self.lines.len().saturating_sub(from.line_idx).saturating_sub(1))
+            .skip(
+                self.lines
+                    .len()
+                    .saturating_sub(from.line_idx)
+                    .saturating_sub(1),
+            )
             .take(self.lines.len().saturating_add(1))
         {
             let from_grapheme_idx = if is_first {
@@ -115,6 +125,7 @@ impl Buffer {
         }
         None
     }
+
     fn save_to_file(&self, file_info: &FileInfo) -> Result<(), Error> {
         if let Some(file_path) = &file_info.get_path() {
             let mut file = File::create(file_path)?;

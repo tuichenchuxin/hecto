@@ -1,5 +1,6 @@
 use crate::prelude::*;
-use crate::editor::annotatedstring::AnnotationType;
+
+use super::AnnotationType;
 
 // clippy::struct_field_names: naming the field `type` is disallowed due to type being a keyword.
 #[derive(Copy, Clone, Debug)]

@@ -1,6 +1,7 @@
 use crossterm::style::Color;
 
 use super::super::AnnotationType;
+
 pub struct Attribute {
     pub foreground: Option<Color>,
     pub background: Option<Color>,

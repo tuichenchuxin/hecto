@@ -1,6 +1,7 @@
 use std::io::Error;
 
 use crate::prelude::*;
+
 use super::super::{DocumentStatus, Terminal};
 use super::UIComponent;
 
@@ -42,10 +43,13 @@ impl UIComponent for StatusBar {
             self.current_status.file_name
         );
 
-        // Assemble the whole status bar, with the position indicator at the back
+        // Assemble the back part
         let position_indicator = self.current_status.position_indicator_to_string();
         let file_type = self.current_status.file_type_to_string();
         let back_part = format!("{file_type} | {position_indicator}");
+
+        // Assemble the whole status bar
+
         let remainder_len = self.size.width.saturating_sub(beginning.len());
         let status = format!("{beginning}{back_part:>remainder_len$}");
 

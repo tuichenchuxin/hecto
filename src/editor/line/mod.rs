@@ -10,8 +10,9 @@ use graphemewidth::GraphemeWidth;
 use textfragment::TextFragment;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
-use crate::editor::annotation::Annotation;
-use super::{AnnotatedString, AnnotationType};
+
+use super::AnnotatedString;
+use super::Annotation;
 
 #[derive(Default, Clone)]
 pub struct Line {
@@ -109,7 +110,6 @@ impl Line {
                 result.add_annotation(annotation.annotation_type, annotation.start, annotation.end);
             }
         }
-
 
         // Insert replacement characters, and truncate if needed.
         // We do this backwards, otherwise the byte indices would be off in case a replacement character has a different width than the original character.

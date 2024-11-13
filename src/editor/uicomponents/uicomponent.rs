@@ -1,7 +1,6 @@
 use crate::prelude::*;
 use std::io::Error;
 
-
 pub trait UIComponent {
     // Marks this UI component as in need of redrawing (or not)
     fn set_needs_redraw(&mut self, value: bool);
