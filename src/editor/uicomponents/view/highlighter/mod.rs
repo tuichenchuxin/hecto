@@ -7,7 +7,6 @@ mod rustsyntaxhighlighter;
 mod searchresulthighlighter;
 use rustsyntaxhighlighter::RustSyntaxHighlighter;
 
-
 fn create_syntax_highlighter(file_type: FileType) -> Option<Box<dyn SyntaxHighlighter>> {
     match file_type {
         FileType::Rust => Some(Box::<RustSyntaxHighlighter>::default()),
@@ -36,6 +35,7 @@ impl<'a> Highlighter<'a> {
     }
     pub fn get_annotations(&self, idx: LineIdx) -> Vec<Annotation> {
         let mut result = Vec::new();
+
         if let Some(syntax_highlighter) = &self.syntax_highlighter {
             if let Some(annotations) = syntax_highlighter.get_annotations(idx) {
                 result.extend(annotations.iter().copied());
